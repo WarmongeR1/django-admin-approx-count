@@ -53,7 +53,7 @@ class TableStatusAdminMixin(object):
                 return cursor.fetchall()[0][4]
             # For Postgres, by Woody Anderson
             # http://stackoverflow.com/a/23118765/366908
-            elif hasattr(connections[self.db].client.connection, 'pg_version'):
+            elif connections["default"].client.connection.vendor == "postgresql":
                 parts = [p.strip('"') for p in self.model._meta.db_table.split('.')]
                 cursor = connections[self.db].cursor()
                 if len(parts) == 1:

@@ -60,6 +60,7 @@ class TableStatusAdminMixin(object):
                     cursor.execute('SELECT reltuples::bigint FROM pg_class WHERE relname = %s', parts)
                 else:
                     cursor.execute('SELECT reltuples::bigint FROM pg_class c JOIN pg_namespace n ON (c.relnamespace = n.oid) WHERE n.nspname = %s AND c.relname = %s', parts)
+                return cursor.fetchall()[0][0]
 
             return default_count
 

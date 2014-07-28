@@ -15,7 +15,6 @@ class _QuerySet(QuerySet):
                 return len(self._result_cache)
 
         query = self.query
-        default_count = self.query.get_count(using=self.db)
 
         if (query.high_mark is None and
             query.low_mark == 0 and
@@ -24,14 +23,14 @@ class _QuerySet(QuerySet):
                 not query.group_by and
                 not query.having and
                 not query.distinct):
-            return self._approx_count(default_count)
+            return self._approx_count()
 
-        return default_count
+        return self.query.get_count(using=self.db)
 
 
 class MaxIdAdminMixin(object):
     class _MaxIdQuerySet(_QuerySet):
-        def _approx_count(self, default_count):
+        def _approx_count(self):
             cursor = connections[self.db].cursor()
             cursor.execute('SELECT MAX(id) FROM %s'
                            % self.model._meta.db_table)
@@ -44,7 +43,7 @@ class MaxIdAdminMixin(object):
 
 class TableStatusAdminMixin(object):
     class _TableStatusQuerySet(_QuerySet):
-        def _approx_count(self, default_count):
+        def _approx_count(self):
             # For MySQL, by Nova
             # http://stackoverflow.com/a/10446271/366908
             if 'mysql' in connections[self.db].client.executable_name.lower():
@@ -62,7 +61,7 @@ class TableStatusAdminMixin(object):
                     cursor.execute('SELECT reltuples::bigint FROM pg_class c JOIN pg_namespace n ON (c.relnamespace = n.oid) WHERE n.nspname = %s AND c.relname = %s', parts)
                 return cursor.fetchall()[0][0]
 
-            return default_count
+            raise NotImplementedError('Not implemented for non-postgres/mysql dbs')
 
     def queryset(self, request):
         qs = super(TableStatusAdminMixin, self).queryset(request)

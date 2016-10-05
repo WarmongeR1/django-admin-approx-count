@@ -6,9 +6,6 @@ __all__ = ['MaxIdAdminMixin', 'TableStatusAdminMixin']
 
 
 class _QuerySet(QuerySet):
-    def _approx_count(self, default):
-        raise NotImplementedError('Do not use this class itself.')
-
     def count(self):
         if self._result_cache is not None:
             if hasattr(self, '_iter') and not self._iter:
@@ -36,6 +33,10 @@ class MaxIdAdminMixin(object):
                            % self.model._meta.db_table)
             return cursor.fetchall()[0][0]
 
+    def get_queryset(self, request):
+        qs = super(MaxIdAdminMixin, self).get_queryset(request)
+        return qs._clone(klass=self._MaxIdQuerySet)
+
     def queryset(self, request):
         qs = super(MaxIdAdminMixin, self).queryset(request)
         return qs._clone(klass=self._MaxIdQuerySet)
@@ -52,7 +53,7 @@ class TableStatusAdminMixin(object):
                 return cursor.fetchall()[0][4]
             # For Postgres, by Woody Anderson
             # http://stackoverflow.com/a/23118765/366908
-            elif connections["default"].client.connection.vendor == "postgresql":
+            elif hasattr(connections[self.db].client.connection, 'pg_version'):
                 parts = [p.strip('"') for p in self.model._meta.db_table.split('.')]
                 cursor = connections[self.db].cursor()
                 if len(parts) == 1:
@@ -62,6 +63,10 @@ class TableStatusAdminMixin(object):
                 return cursor.fetchall()[0][0]
 
             raise NotImplementedError('Not implemented for non-postgres/mysql dbs')
+
+    def get_queryset(self, request):
+        qs = super(TableStatusAdminMixin, self).get_queryset(request)
+        return qs._clone(klass=self._TableStatusQuerySet)
 
     def queryset(self, request):
         qs = super(TableStatusAdminMixin, self).queryset(request)
